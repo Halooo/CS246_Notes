@@ -138,11 +138,11 @@ In Unix, every file has
 
 - meanings of permission bits
 
-  - | bit  | file                          | dir                                      |
-    | ---- | ----------------------------- | ---------------------------------------- |
-    | r    | file contents can be read     | dir contents can be read, eg: ls         |
-    | w    | file contents can be written  | dir contents can be modified, eg: create a new file |
-    | x    | file can be executed as a pro | dir contents can be navigated, eg: cd in to do "stuff" |
+| bit  | file                          | dir                                      |
+| ---- | ----------------------------- | ---------------------------------------- |
+| r    | file contents can be read     | dir contents can be read, eg: ls         |
+| w    | file contents can be written  | dir contents can be modified, eg: create a new file |
+| x    | file can be executed as a pro | dir contents can be navigated, eg: cd in to do "stuff" |
 
 
 ### chmod - set permissions on file or dir
