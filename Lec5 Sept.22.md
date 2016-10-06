@@ -49,14 +49,6 @@ int main() {
 
 **read ints and handle bad inputs**
 
-```c++
-
-```
-
-
-
-
-
 
 
 # Stream Abstraction 
