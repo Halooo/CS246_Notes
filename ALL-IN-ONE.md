@@ -1734,3 +1734,509 @@ struct Node{
 }
 ```
 
+
+
+Recap:
+
+Destructors 
+
+- method called destructor runs when an object is destroyed 
+  - stack allocated - out of scope
+  - heap allocated - `delete`
+- form 
+
+```c++
+~ Student() {
+  ...
+}
+```
+
+- sequence 
+  1. dtor called for object
+  2. dtor called for fields that are objects 
+  3. space reclaimed
+- default dtor - just invokes dotrs for fields that are objects 
+- why do you need to write own ones? - ***dynamic memory***
+
+eg
+
+```c++
+void foo() {
+  Node *np = new Node; // stack - np will be destroyed b/c on stack
+  ... // anything in heap will leak memory
+}
+ void bar() {
+   Node * np2 = new Node; // np2 - stack
+   ...
+   delete np2; // leaks memory  the first Node is freed but others linked to it is not
+ }
+```
+
+
+
+```c++
+struct Node {
+  ~ Node() {
+    delete next; // dtor
+  }
+  int data;
+  Node *next; 
+}
+
+Node *np = new Node;
+...
+delete np;
+```
+
+
+
+## Copy Assignment Operator
+
+```c++
+Student billy {30,45,50}; // ctor
+Student jane = billy; // copy ctor - initializing from a copy
+Student joey; // ctor
+joey = billy; // copy assignment - after initialization
+```
+
+- classes have a default copy assignment operator
+  - does a shallow copy
+- when do you need to write your own copy-assign operator?
+  - dynamic memory
+
+```c++
+struct Node { // attempt #1
+  ...
+  Node &operator = (const Node &other) {
+    data = other.data;
+    delete next;
+    next = other.next ? new Node{*other.next} : nullptr;
+    return *this;
+  }
+};
+```
+
+- why is this problematic? - what if we do this: 
+
+```c++
+Node n;
+n = n; // self-referencial comparisions
+	   // end up deleting this.next other.next
+	   // bad - deleted data
+```
+
+
+
+While writing operator, always check for self-assignment
+
+```c++
+struct Node {
+  int data;
+  Node *next;
+  Node &operator= (const Node &other) { // attempt #2 - fixes self-assignment
+    if (this == &other) return *this;
+    data = other.data;
+    delete next;
+    next = other.next ? new Node{*other.next} : nullptr;
+    return *this;
+  }
+};
+```
+
+
+
+other issues?
+
+1. what if `other` points to a node in my list?
+   - can inadvertently delete other's list
+2. what if new fails? we have freed old data before new node is created - data loss
+   - data loss
+   - ideally, delete old data **last** 
+
+```c++
+struct Node {
+  ...
+  Node & operator = (const Node &other) { // attempt #3
+    if (this == &other) return *this;
+    Node *tmp = next;
+    next = other.next ? new Node{*other.next} : nullptr; // OK. if new fails here, function will return
+    data = other.data;
+    delete tmp;
+    return *this;
+  }
+};
+```
+
+
+
+- copy & swap idiom
+
+```c++
+#include <utility>
+struct Node {
+  ...
+  void swap(Node &other) {
+    using std::swap;
+    swap(data, other.data);
+    swap(next, other.next);
+  }
+  Node &operator= (const Node &other) {
+    Node tmp = other; // copy ctor
+    swap(tmp); // swap with tmp
+    return *this; // tmp stack allocated - when it goes out of scope, tmp is destroyed - and old data with it
+  }
+};
+```
+
+
+
+## R-value & R-value References
+
+`int x = 5` 
+
+`int x` l-value have an address 
+
+`5` r-value anything not an l-value
+
+
+
+consider 
+
+```c++
+Node n{1, new Node{2,nullptr}};
+Node m = n; 
+Node m2;
+m2 = n; // copy assign
+
+Node plusOne(Node n) {
+  for (Node *p = &n; p; p = p->next) {
+    ++p->data;
+  }
+  return n;
+}
+Node m3 = plusOne(n); // copy ctor
+```
+
+
+
+- compiler creates temporary objects
+  - ie plusOne) returns a temp
+  - this is just going to get deleted as soon as the statement ends
+- it is *wasteful* to copy from a temporary since we are just going to discard it
+  - instead of copying the data from a temp 
+- **But** I have to know that my r-value is a temp to steal from it
+
+How do I tell if I have a temp object?
+
+- in c++, an r-value reference (&&) refers to a temp object
+
+eg: Node && - reference to a tmp r-value of type Node
+
+Node & - l-value reference
+
+
+
+We can write a version of copy ctor that works with - rvalues (temp object)
+
+```c++
+struct Node{
+  ...
+  Node (Node && ): data{other.data}, next{other.data} {
+    other.next = nullptr;
+  }
+}
+```
+
+- so, a **move constructor** steals data from an r-value
+- Similarly
+
+```c++
+Node n;
+m = addOne(n); // temporary object - used by copy assign operator
+			  // costly - copy ctor being called, then tmp discarded
+			  // steal it instead!
+```
+
+
+
+- to avoid copy/assign from temp, create a **move assignment operator**
+
+```c++
+struct Node {
+  ...
+  Node & operator = (Node && other) {
+    using std::swap;
+    swap(data, other.data); // no temp
+    swap(next, other.next);
+    return *this;
+  }
+};
+// when returns, other is destroyed (tmp) and takes original data
+```
+
+
+
+- if you don't define a move ctor/move assignment operator, get copy versions instead
+- if a move ctor/move assign op is defind, it will replace copy ctor/assignment for r-value references (temps)
+
+
+
+### Constructor
+
+destructor *
+
+copy constructor * , move constructor * (specialized copy constructor),
+
+copy assignment operator * , move assignment operator * (specialized copy assignment operator)
+
+### "Rule of 5"
+
+If you need a custom version of any of *, then you usually need a custom version of ***all 5*** above
+
+
+
+# Member Operators
+
+recall: copy assignment (operator = ) is a member fn 
+
+eg:
+
+```c++
+struct Vec {
+  ...
+  vec operator = (const Vec &v); // member of Vec only has RHS 
+};
+```
+
+- when an operator is declared as a member function, "this takes the place of the LHS argument"
+
+```c++
+struct Vec {
+  int x, y;
+  ...
+  vec operator + (const Vec &other) {
+    return {x+other.x, y+other.y};
+  }; // member of Vec only has RHS 
+  Vec operator * (const int k) {
+    return {k*x, k*y};
+  }
+  Vec operator * (const int k, const Vec &other) {
+    return {k*other.x, k*other.y};
+  }
+};
+
+Vec v1;
+Vec v2;
+Vec v3 = v1 + v2; // operator +
+Vec v4 = v3 * 55; // operator *
+Vec v5 = 2 * v4; // scalar LHS. Vec RHS
+
+```
+
+
+
+### I/O Operators?
+
+```c++
+struct Vec {
+  ...
+  ostream & operator << (ostream &out) {
+    return out << x << " " << y;
+  }
+};
+```
+
+
+
+So, operator << and operator >> are standalone so that we have the correct operators
+
+cin and cout are LHS, class RHS
+
+- but there are some operators that **must** be member functions:
+  - operator `= `
+  - operator `[]`
+  - operator `->`
+  - operator `()`
+  - operator `T` (where T is a type)
+- side note: Separate Compilation of classes
+
+```c++
+// node.h
+#ifndef _NODE.H_
+#define _NODE.H_
+struct Node {
+  int data;
+  Node * next;
+  explicit Node (int data, Node *next = nullptr);
+ 
+  Node (const while &n);
+}
+#endif
+```
+
+
+
+```c++
+// Node.cc
+#include <node.h>
+Node::Node(int data, Node *next):data{data}, noext{next} {
+  
+}
+Node::Node(const Node &n): data{n.data}, next {n.next ? new Node {*n.next} : nullptr} {
+  
+}
+// :: scope resolution operator means "in the context of" eg Node method of class Node
+```
+
+
+
+## constant objects
+
+recall:
+
+```c++
+int f (const Node &n)
+```
+
+- often pass `const` objects as parameters
+- `const` indicate that its fields cant be modified
+  - what about member functions?
+    - risk of member function changing data (violating const)
+- you can call functions on `const` objects if the methods promise not to change data/fields.
+
+```c++
+struct Student {
+  int assns, mt, final; 
+  float grade () const; // will not change data;
+}
+```
+
+- compiler checks that we only call const methods of `const` object 
+- but what if I am profing / debugging 
+
+```c++
+struct Student {
+  int numMethodCalls = 0;
+  float grade() {
+    ++nameMethodCalls; // nothing to do with structed data
+    return...
+  }
+}
+```
+
+- grade cannot easily be const - can't increment `numMethodCalls()`
+- but `numMethodCalss()` only violates physical const (ie. changes bits n memory, but doesn't affect grade)
+  - doesnt affect logical constness (grade validity)
+- so what to do?
+  - we can make the field mutable, can be changed oven if object is const
+
+```c++
+struct student {
+  ...
+  mutable int numMethodCalls = 0;
+  float grade() const {
+    ++numMethodCalls; // const does not apply to mutable fields
+  }
+};
+```
+
+
+
+## Static Members
+
+- numMethodCalls - applies to a single object
+- what if I wont to count method calls for the class?
+  - or track number of students created?
+- **Static members** apply to the class, not the object (and not to any one instance of the class)
+
+```c++
+struct Student {
+  static int numInstances;
+  Student (int assns, int mt, int final):assns{assns}, mt{mt}, final{final} {
+    ++ numInstances;
+  }
+};
+int Student::numInstances = 0; // in the .cc file outside of scope of class
+```
+
+
+
+## Static Member Functions
+
+don't depend on an object either for their existence 
+
+- don't have access to a this pointer
+- don't have access to fields
+- can access static members
+
+```c++
+// student.cc
+struct Student {
+  static int numInstances;
+  Student (int assns, int mt, int final):assns{assns}, mt{mt}, final{final} {
+    ++numInstances;
+  }
+  static void printInstances() {
+    cout << numInstances << endl;
+  }
+};
+
+int Student::numInstances = 0; 
+// initialize the static variable outside of class b/c we do not want to reset the value of numInstances to 0 every time we construct it
+```
+
+```c++
+// main.cc
+int main() {
+  Student::printInstances(); // 0
+  Student billy {70,80,90};
+  Student jane {80,85,90};
+  Student::printInstances(); // 2
+}
+```
+
+
+
+### Static Member Functions
+
+1. dont rely o an instance of a class
+2. don't have a "this" (ie. not necessarily have any instances of this class)
+3. really just functions (not member functions)
+4. can **only** access static members/fields
+   - converse not true, normal member functions can still access static members/fields
+
+# Invariants . Encapsulation
+
+Consider: 
+
+```c++
+struct Node {
+  int data;
+  Node *next;
+  Node (int data,Node *next): data{data}, next{next} {
+    
+  }
+  ~Node() {delete next;}
+};
+```
+
+```c++
+int fun() {
+  Node n1 {1, new Node {2, nullptr}};
+  // n1 is in stack, pointing to a node in heap
+  
+  Node n2 {3, nullptr};
+  Node n3 {4, &n2};
+  // n2 and n3 are both in stack, n3 pointing to n2
+  // if call delete n3 here, since n2 is not in heap, program is crashed
+} // returns
+```
+
+- we assumed in the design that `next` was a ptr to the heap
+- users did not know this!
+
+**invariant ** - an assumption that must hold true for your program to operate correctly
+
+ie - invariant in this case was that our pointer was either a valid ptr to heap(or nullptr)
+
+- issue: cant generate this invariant (and cant generate correct usage by our user)
