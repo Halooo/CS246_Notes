@@ -13,8 +13,13 @@ CS246 class notes for University of Waterloo Fall 2016
 | Lec7    | Operator Overloading, Processor, Separate Compilation |
 | Lec8    | Global Variable, Classes, Constructors   |
 | Lec9    | GDB(debugger), MIL, Constructors - Copy Ctor, Dtor |
-| Lec10   |                                          |
-| Lec11   |                                          |
-| Lec12   |                                          |
-| Lec13   |                                          |
+| Lec10   | Copy Assignment Operator, R-value        |
+| Lec11   | Member/standalone Operator, Const Obj, Static, Invariants |
+| Lec12   | Invariants, Encapsulation, Class, Iterator |
+| Lec13   | Iterator, Accessor, Mutator, Makefile, UML |
 | Lec14   |                                          |
+| Lec15   | Destructor(virtual), Abstract Classes, Template, Exception |
+| Lec16   | Exceptions(try catch), Design Pattern(MVC) |
+| Lec17   |                                          |
+|         |                                          |
+|         |                                          |
