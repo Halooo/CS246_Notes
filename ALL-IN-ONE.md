@@ -318,14 +318,14 @@ fi
 
 - choice of operator tells bash how to process
 
-- | as integers                              | as strings |
-  | ---------------------------------------- | ---------- |
-  | `-eq` equals                             | `=` equals |            |
-  | `-ne` not equals            | `!=` not equals |            |
-  | `-lt` less than             | `<` "less than" |            |
-  | `-gt` greater than          | `>` "greater than" |            |
-  | `-le` less than equal to                 |            |
-  | `-ge` greater than equal to              |            |
+- | as integers                 | as strings         |
+  | --------------------------- | ------------------ |
+  | `-eq` equals                | `=` equals         |
+  | `-ne` not equals            | `!=` not equals    |
+  | `-lt` less than             | `<` "less than"    |
+  | `-gt` greater than          | `>` "greater than" |
+  | `-le` less than equal to    |                    |
+  | `-ge` greater than equal to |                    |
 
 ## Loops
 
@@ -2498,18 +2498,19 @@ for(auto n:lst){
 
     ​	    — keyword that says your friends have access to your private data
     ```c++
-class List {
-  struct Node;
-  Node *theList;
-public:
-  class Iterator {
+    class List {
+    struct Node;
+    Node *theList;
+    public:
+    class Iterator {
     Node *p;
-  public:
+    public:
     explicit Iterator (Node *p):p{p} {}
-  };
-  Iterator begin() {...}
-  Iterator end() {...}
-}; // end List
+    };
+    Iterator begin() {...}
+    Iterator end() {...}
+    }; // end List
+    ```
 ```
 
 
@@ -2535,7 +2536,7 @@ client can do this
 
 eg: *using friend*
 
-```c++
+​```c++
 class List {
   ...
   public:
@@ -2786,3 +2787,629 @@ DEPENDS = ${OBJECTS: .o=.d}
 - OO programming - all about abstractions; and relationships between abstractions
 - helpful to describe relationships, both for design and implementation
 - standard: UML (unified modelling language)
+
+
+
+
+
+
+
+# Lec 14 to be inserted here 
+
+
+
+
+
+
+
+### Destructor (revisited) 
+
+Bad code
+
+```c++
+class x {
+  int *x;
+  public:
+  	x(int n): x{new int [n]} {};
+    ~x() {delete [] x;}
+};
+
+class y: public x {
+  int *y;
+  public:
+    y(int m, int n):x{n}, y{new int []} {}
+    ~y(){delete [] y;}
+};
+
+X *myX = new y {10, 20};
+delete myX;
+```
+
+- what is the problem with this code??
+  - This leaks memory
+  - b/c only `~x` destructor for x runs, that for y never runs
+- Q: How do we ensure that the subclass destructor runs, even when using a Base class pointer?
+  - A: Declare the destructor virtual - forces the compiler to actually determine the type at runtime
+
+```c++
+class x {
+  ...
+  public:
+    ...
+    virtual ~x() {delete [] x;}
+};
+```
+
+Rule -
+
+- always make the destructor virtual in classes that are meant to be subclasses
+  - even if it does nothing! b/c the subclass's destructor might do something 
+- If you don't want a class to be subclassed, make it `final`
+
+eg: 
+
+```c++
+class y final : public x { // ie. yea cannot subclass y
+  ...
+};
+```
+
+
+
+## Pure Virtual Methods (Abstract Classes)
+
+eg
+
+``` c++
+class Student{
+protected:
+  int num Classes;
+public:
+  vitual int fees(); // calculate fees
+}
+
+class Regular: public student {
+public:
+  int fees() override; // calc. regular student fees
+};
+
+class Coop: public Student {
+public:
+  int fees() override; // calc coop student fees
+}
+```
+
+Q: re Student impl
+- what do I do with `Student::fees()` ?
+  - I'd like this method to have no implementation ..
+  - make it a **pure virtual** method
+
+eg: 
+``` c++
+class Student {
+public:
+  virtual int fees() = 0;
+}
+```
+
+Once you add a pure virtual method to a class, that class canot be instantiated
+ie
+``` c++
+Student s; // error - can only instantiate Regular or Coop
+```
+
+- such a class is called an **Abstract Class** 
+  - purpose is to serve as a base lass / organize subclasses
+  - subclasses of abstract classes are also abstract unless you implement all pure virtual methods
+  - classes that can be instantiated (incl. subclasses implementing pure virtual methods) are **Concrete Classes**
+
+
+**in UML:**
+- represent virtual and pure virtual methods in ***italics***
+- represant abstract classes with name in ***italics***
+  eg:
+
+*Student*
+|__Regular
+|__Coop
+
+
+
+## Templates
+
+recall:
+
+``` c++
+class List {
+  struct Node;
+  Node * theList;
+};
+
+struct List::Node {
+  int data;
+  Node *next;
+}
+```
+
+
+
+Q: what if I want a List that supports something other than int?
+
+A1: copy/paste code into a new class ...
+
+- not scalable / maintainable
+
+A2: to use \<Template\> class 
+
+- A template class is a class that is parameterized by **type**
+
+eg: Stack
+
+``` c++
+template <typename T> class Stack {
+  int size;
+  int cap;
+  T * contents;
+public:
+  Stack() {...}
+  void push (T x) {...}
+  T top() const {...}
+  void pop() {...}
+};
+```
+
+We can rewrite our List class ad a template :
+
+``` c++
+template <typename T> class List {
+  struct Node {
+    T data;
+    Node *next;
+  };
+public:
+  class Iterater {
+    Node *p;
+    explicit Iterator (Node *p):p{p} {}
+  public:
+    T &operator*(){...}
+    friend class List<T>;
+  };
+  T ith(int i) {...}
+  void addToFront(const T &n) {...}
+};
+```
+
+possible client code
+
+``` c++
+List <int> l1;
+List <list<int>> l2;
+l1.addToFront(s);
+l2.addToFront(l1);
+```
+
+``` c++
+for (auto it: li) {
+  cout << it << endl;
+}
+```
+
+
+
+Compiler generates code for templates, loosed on usage. 
+
+
+
+## Standard Template Library (STL)
+
+- originally, this was a set of external libraries for working with templates
+  - ie. use templates to add features to c++
+  - now included in c++
+- eg. Vector - dynamic length array
+
+eg: Vectors
+
+```c++
+#include <vector>
+using namespace std;
+vector <int> v {4,5}; // init with values 4,5
+v.emplace_back(6); // 4,5,6
+v.emplace(7); // 7,4,5,6
+```
+
+- methods to insert, erase...
+
+
+
+loop over vectors:
+
+```c++
+for (int i = 0; i < v.size(); ++i) {
+  cout << v[i] << endl;
+}
+```
+
+Iterator abstraction:
+
+```c++
+for (vector<int>::iterator it = v.begin(); it != end(); ++it) {
+  cout << *it << endl;
+}
+
+// or
+
+for (auto n : v) {
+  cout << n << endl;
+}
+```
+
+
+
+To iterate in reverse:
+
+``` c++
+for (vector<int>::reverse_iterator it = v.rbegin(); it != rend(); ++it) {
+  ...
+}
+
+// or
+
+for (auto it = v.rbegin(); it != v.rent(); ++it) {
+  ...
+}
+
+v.pop_bacl(); // removes las element
+```
+
+
+
+Advantage?
+
+- easy to work with - no explicit new/delete to manage it
+- vectors are guaranteed to be implemented as arrays
+- use whenever you need dynamic - length array
+  - avoid vector versions of new and delete
+
+Other vector operators work with iterators - eg erase
+
+``` c++
+auto it = v.erase(v.begin()); // erases item 0, return iterator to next item
+it = v.erase(v.begin() + 3); // erases 4th item
+it = v.erase(it); // erases item pointed to by iterator
+it = v.erase(v.end()-1); // erase last item in list
+```
+
+
+
+```c++
+v[i]; // returns ith element - unchecked - 
+// eg vector sizes; v[10] 
+// fails with unspecified errr(undefined behaviour)
+
+v.at(i); // returns ith element - checked
+// compiler has predictable behaviour
+```
+
+
+
+# Exceptions
+
+What do you do, when errors occur?
+
+Problem:
+
+- vector code (for `v.at[i]`) can detect the errors, but does it know what to do with it?
+- the client/program knows what to do, but cannot directly detect error
+  - detect errors: local problem "class/function"
+  - react to errors: global problem "client"
+
+How does vector tell the program that there's an error?
+
+- **C sol'n**: 
+  - return status code from a function
+  - or set global value like an `int error`
+  - these are not great, encourage programmers to skip errors
+- **C++ sol'n**: when an error arises, the function **raises an exception**
+  1. (exception is a type of error), by default, the program halts
+  2. we can write a handler to **catch the exception**
+
+eg: `Vector <T>::at` raises an exception `std::out_of_range`
+
+``` c++
+#include <stdexcept>
+try {
+  cout << v.at(1000000) << endl;
+}
+catch (out_of_range) {
+  cerr << "Range Error" << endl;
+}
+```
+
+
+
+
+
+# Exceptions (cont'd)
+
+Consider:
+
+
+
+``` c++
+void f() {
+  ...
+  throw out_of_range("f"); // raise an exception with a parameter
+}
+
+void g() {f();}
+void h() {g();}
+
+int main() {
+  try {
+    h();
+  } catch (out_of_range) {
+    ...
+  }
+}
+```
+
+What happens?
+
+main calls h
+
+h calls g
+
+g calls f
+
+f `throw` ... all the way back to main
+
+
+
+Control back through the call chain (unwinds the stack) until a handler is found (for the exception)
+
+- If there is no matching handler, your program terminates 
+
+What is out_of_range? a class
+
+The statement out_of_range("f"} - invokes ctor, with "f" as a parameter (auxil information)
+
+
+
+How to examine auxiliary info?
+
+``` c++
+try {
+  ...
+} catch (out_of_range ex) {
+  cout << ex.what() << endl;
+}
+```
+
+
+
+A handler can do part of the recovery job. ie.take corrective action and throw another exception.
+
+``` c++
+try {
+  ...
+} catch (someErrorType s) {
+  ...
+  throw SomeOtherError (...); // new 
+}
+```
+
+or just throw some exception
+
+``` c++ 
+try {
+  ...
+} catch (someErrorTpe s) {...
+  throw;
+}
+```
+
+
+
+### Why do we say throw instead of throw s>
+
+Try exception s maybe a subclsss of SomeErroType , rather than SomeErrorType intself
+
+- throw s - throws a new exception of SomeErrorType 
+  - ie. slices the derived class into SomeErrorType
+- throw - rethrows the actual exception (of actual type) - no slicing
+
+
+
+When throwing/raising an exception, you should try and be specific
+
+But, you can write a handler to capture all
+
+
+
+``` c++
+try {.....}
+catch (...) { // literaly ... - three dots is generic exception handler
+  // do something
+}
+```
+
+``` c++
+try {
+  // do sth
+} catch (exA) {
+  //
+} catch (exB) {
+  //
+} catch (...) {
+  // default
+}
+```
+
+
+
+You can throw "anything" - doesn't even have to be an object
+
+eg: git: lectures/c++/exceptions - fib - fact (both recursive)
+
+- using exceptions for regular data passing is a bad idea - overhead
+- save exceptions for accasional use /exceptional circumstances (like errors)
+
+You can also define your own exception classes
+
+``` c++
+class BadInput {};
+try {
+  int n;
+  if (!(cin>>n)) throw BadInput{};
+}
+catch (BadInput &) { // return exception by reference
+  cerr << "badly formed input" << endl; // avoids slicing problem
+  									// compiler knews actual type
+  									// maxim: "Throw by value, catch by reference"
+}
+```
+
+
+
+Rule: ***Never, ever*** for any reason, ever, 
+
+- never throw an exception from a destructor
+  - dtor may be called after an exception is thrown (while going up the call stack)
+  - if your dtor throws an exception, then you have 2 unhandled exceptions - program will terminate 
+
+
+
+# Design Patterns (cont'd) 
+
+Best - practices for solving common problems
+
+**Guiding Principle**
+
+- program to interfaces, not implementation
+- *Abstract base classes* (virtual methods)
+  - define the interface
+  - work with pointers to abstract base classes, call methods through pointers
+  - concrete subclasses can be swapped in /out
+- gives us one common abstraction over a variety of behaviours
+
+
+
+eg: Iterators
+
+``` c++
+class AbatractIterator {
+public: 
+  virtual int &operator *() const = 0;
+  virtual AbstractIterator &operator ++() = 0;
+  virtual bool operator== (const AbstractIterator &other) const = 0;
+  virtual bool operator!= (const AbstractIterator &other) const {return !(*this == other);}
+  virtual ~AbstractIterator();
+}
+
+class List {
+  struct Node;
+  ...
+public:
+  class Iterator: public AbstractIterator {
+    ... // override /implement all virtual methods
+  };
+};
+
+class Set {
+  ...
+public:
+  class Iterator:public AbstractIterator {
+    ...
+  };
+};
+```
+
+
+
+Now, I can write functions that work on any data structure with an iterator derived from AbstractIterator
+
+eg: function to apply a Function from arbitrary iterator /data structure
+
+```c++
+template <typename Fn>
+  void foreach(AbstractIterator start, AbstractIterator end, Fn f) {
+    while (start != end) {
+      f(*start);
+      ++start;
+    }
+  }
+```
+
+this function works over Lists, sets and anything else with an Iterator derived from `AbstractIterator` 
+
+
+
+## Observer Pattern
+
+- publish - subscribe (pub/sub)
+- model-view-controller
+
+2 entities:
+
+- one publisher
+  -  generates data
+- one or more observers
+  - monitor data 
+  - need to know when the data changes 
+
+eg: spreadsheet - cells with data and graphs (cells publisher, graphs observers)
+
+characteristics
+
+- publisher works alone
+- add/remove observers
+- loosely coupled
+- publisher knows very little about observers
+
+**UML**
+
+
+
+Sequence
+
+0. Concrete Observer calls subject::attach to register itself; Subject maintains a list of observer * (eg. Vector \<observer*> )
+1. Subjects state gets updated (eg. value in a cell changes)
+2. Subject notify Observers() calls each observers notify
+3. each observer calls concrete subject::getState to get state and react accordingly 
+
+
+
+eg: horse racing & betting
+
+subject - publishes the winner
+
+observer - people betting - observe race, declare victory when their horse wins
+
+
+
+``` c++
+class Subject {
+  vector <observer *> observers;
+public:
+  subject();
+  void attach (observer *ob) {
+    observers emplace_back(ob);
+  }
+  void detach(observer *ob);
+  void notifyObservers() {
+    for (auto &ob: observers) ob->notify();
+  }
+  virtual ~Subject = 0;
+};
+
+class Observer {
+public: 
+  virtual void notify()=0;
+  virtual ~Observer() {}
+}
+```
+
+
+
+
+
