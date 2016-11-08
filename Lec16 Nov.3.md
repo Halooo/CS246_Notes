@@ -258,7 +258,7 @@ observer - people betting - observe race, declare victory when their horse wins
 
 ``` c++
 class Subject {
-  vector <observer *> observers;
+  vector <observer*> observers;
 public:
   subject();
   void attach (observer *ob) {
@@ -268,7 +268,7 @@ public:
   void notifyObservers() {
     for (auto &ob: observers) ob->notify();
   }
-  virtual ~Subject = 0;
+  virtual ~Subject() = 0; // need to be implemented Subject::~Subject() {}
 };
 
 class Observer {
@@ -277,4 +277,51 @@ public:
   virtual ~Observer() {}
 }
 ```
+
+``` c++
+class HorseRce: public Subject {
+  ifStream in; // source of data
+  string lastWinner; 
+public:
+  HorseRace(string source): in{source} {}
+  ~HorseRace() {}
+  bool runRace() {return in >> lastwinner;}
+  string getState() const {return lastWinner;}
+}
+
+class Better: public Observer {
+  HorseRace* subject;
+  string name, myhorse;
+public:
+  Better(HorseRace *hr, string name, string myhorse): subject{hr}, name{name}, myhorse{myhorse}
+  {  
+    subject->attach(this);
+  }
+  void notify() {
+    string winner = subject->getState();
+    cout << (winner == myhourse ? "I win! :D" : "I lost :(") << endl<<
+  }
+};
+```
+
+```c++
+// main
+int main () {
+  HorseRace hr {"source.txt"};
+  Better Larry {&hr, "Larry", "Runs Like A Cow"};
+  
+  while (hr.runRace()) {
+    hr.notifyObserver()
+  }
+}
+```
+
+
+
+**Simplifications**
+
+1. If the state is trivial, you can publish directly in your notify() and eliminate getState()
+2. If you *know* that you will only have one single subject, you can merge subject and concrete subject(horserace class)
+   - risky, hard to get generalize later
+3. If the subject & observer are the same, could merge into one class. eg: cell is .xlsx (in excel)
 
