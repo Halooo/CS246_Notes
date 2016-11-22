@@ -20,6 +20,11 @@ CS246 class notes for University of Waterloo Fall 2016
 | Lec14   |                                          |
 | Lec15   | Destructor(virtual), Abstract Classes, Template, Exception |
 | Lec16   | Exceptions(try catch), Design Pattern(MVC) |
-| Lec17   |                                          |
+| Lec17   | Decorator Pattern, Factory Method Pattern, Template Method Pattern |
+| Lec18   | NVI Idiom, STL Maps, Inheritance & copy/move operators |
+| Lec19   | Visitor Pattern, Compiler Dependencies   |
+| Lec20   | Measures of Design Quality, Decoupling the Interface (MVC),Exception Safety |
+| Lec21   | Shared Pointer, Exception Safety         |
+|         |                                          |
 |         |                                          |
 |         |                                          |

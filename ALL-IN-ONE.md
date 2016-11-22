@@ -3368,7 +3368,7 @@ characteristics
 
 **UML**
 
-
+![mvc](./img/MVC.png)
 
 Sequence
 
@@ -3389,7 +3389,7 @@ observer - people betting - observe race, declare victory when their horse wins
 
 ``` c++
 class Subject {
-  vector <observer *> observers;
+  vector <observer*> observers;
 public:
   subject();
   void attach (observer *ob) {
@@ -3399,7 +3399,7 @@ public:
   void notifyObservers() {
     for (auto &ob: observers) ob->notify();
   }
-  virtual ~Subject = 0;
+  virtual ~Subject() = 0; // need to be implemented Subject::~Subject() {}
 };
 
 class Observer {
@@ -3409,7 +3409,1297 @@ public:
 }
 ```
 
+``` c++
+class HorseRce: public Subject {
+  ifStream in; // source of data
+  string lastWinner; 
+public:
+  HorseRace(string source): in{source} {}
+  ~HorseRace() {}
+  bool runRace() {return in >> lastwinner;}
+  string getState() const {return lastWinner;}
+}
+
+class Better: public Observer {
+  HorseRace* subject;
+  string name, myhorse;
+public:
+  Better(HorseRace *hr, string name, string myhorse): subject{hr}, name{name}, myhorse{myhorse}
+  {  
+    subject->attach(this);
+  }
+  void notify() {
+    string winner = subject->getState();
+    cout << (winner == myhourse ? "I win! :D" : "I lost :(") << endl<<
+  }
+};
+```
+
+```c++
+// main
+int main () {
+  HorseRace hr {"source.txt"};
+  Better Larry {&hr, "Larry", "Runs Like A Cow"};
+  
+  while (hr.runRace()) {
+    hr.notifyObserver()
+  }
+}
+```
 
 
 
+**Simplifications**
+
+1. If the state is trivial, you can publish directly in your notify() and eliminate getState()
+2. If you *know* that you will only have one single subject, you can merge subject and concrete subject(horserace class)
+   - risky, hard to get generalize later
+3. If the subject & observer are the same, could merge into one class. eg: cell is .xlsx (in excel)
+
+# Decorator Pattern
+
+- suppose you want to enhance ('decorate') an object
+  - add functionality at runtime (vs. compile time)
+
+eg: basic window, enhance by adding menus, toolbars, scrollbars...
+
+![componentClass](./img/components.png)
+
+The class *Component* defines the interface (ie. operations objects provide)
+
+- concreteComponent - implements
+
+Decorator is a component and has a component 
+
+​	eg: window with a menu is a kind of window, with a pointer to an underlying plain window
+
+Decorators and ConcreateComponent 
+
+- share a base class
+- methods can be used polymorphically on them
+
+eg: Pizza
+
+![pizza](./img/pizza.png)
+
+``` c++
+class Pizza {
+public:
+  virtual sloat price() const=0;
+  virtual string desc() const=0;
+  virtual ~Pizza();
+};
+
+class CrustAndSause: public Pizza {
+public:
+  float price() const override {return 5.99;}
+  string desc() const override {return "Pizza";}
+};
+```
+
+``` c++
+class Decorator: public Pizza {
+protected:
+  Pizza *component;
+public:
+  Decorator (Pizza *p) : component{p} {}
+  virtual ~Decorator() {delete component;}
+};
+
+class StuffedCrust: public Pizza {
+public:
+  StuffedCrust(Pizza *p): Decorator{p} {}
+  float price() const override {return component->price+2.65;}
+  string desc() const override {return component->desc+" with stuffed crust";}
+}
+
+class Topping: public Decorator{
+  string theTopping;
+public:
+  Topping(string topping, Pizza *p): Decorator{p}, theTopping{topping} {}
+  float price() const override {return component->price+0.75;}
+  string desc() const override {return component->desc+" with "+theTopping;}
+}
+```
+
+
+
+# Factory Method Pattern
+
+**problem**: write a video game, 2 kinds of enemies: turtles bullets
+
+The system randomly sends out enemies, but later levels send out more bullets
+
+![game](./img/game.png)
+
+Since we never really knew what enemy is being created next, we cannot just call the ctor
+
+- we dont want to hard-code the policy (ie. we want flexibility - difficulty add levels later)
+
+**Factory** method to create enemies for us
+
+``` c++
+class Level {
+  public:
+  virtual Enemy* createEnemy=0;
+  ...
+};
+```
+
+``` c++
+class NormalLevel: public Level {
+public:
+  Enemy* createEnemy() override {
+    // create mostly turtles
+  }
+};
+class Castle: public Level {
+public:
+  Enemy* create Enemy() override { 
+    // create mostly bullets
+  }
+};
+```
+
+eg: usage
+
+```c++
+Level *l = new NormalLevel;
+Enemy *e = l->createEnemy();
+```
+
+Factory method or "virtual constructor pattern"
+
+
+
+# Template Method Pattern
+
+- we want the subclass to override **source** (but not all) base class behaviour
+
+eg: red and green turtles
+
+```c++
+class Turtle {
+public:
+  void draw() {
+    drawHead();
+    drawShell();
+    drawFeet();
+  }
+private:
+  void drawHead();
+  virtual void drawShell()=0;
+  void drawFeet();
+}
+
+class RedTurtle: public Turtle {
+  void drawShell() override {
+    // ... draw red
+  }
+};
+class GreenTurtle: public Turtle {
+  void drawShell() override {
+    // draw green
+  }
+}
+```
+
+
+
+### Extension: Non-virtual Interface (NVI) idiom
+
+A public virtual interface is both:
+
+1. an interface to the client
+2. an interface to subclasses
+
+# NVI Idiom (Non-virtual interface)
+
+A public virtual method is really 2 things
+
+1. a public interface for the client
+2. an interface for subclasses - override to specializing behavior
+
+These 2 things should not be tied
+
+eg: we want to change implementation later without changing public methods
+
+
+
+**NVI Idiom States:**
+
+1. all public methods should be non-virtual - client interface (will not change)
+2. all virtual methods should be private/protected - specializing derived classes
+   - exception: dtor is still public (even if virtual)
+   - want dtor to be virtual, but needs to be public
+
+
+
+eg: Digital media - Non-virtual
+Bad code. Mixing public and virtual method together
+``` c++
+class DigitalMedia {
+public:
+  virtual void play() = 0;
+  virtual ~DigitalMedia();
+};
+```
+Good code
+``` c++
+class DigitalMedia {
+public:
+  void play() {
+    doPlay();
+  }
+  virtual ~DdigitalMedia(); // public interface
+private:
+  virtual void doPlay()=0; // private and virtual
+};
+```
+
+If we need extra control (later on) we can claim it
+eg: 
+-  can add code before/after doPlay to check copyright, update play count
+-  we can add more "hooks" for derived classes by. eg: adding other virtual methods to showCoverArt
+-  all without changing the public interface
+
+
+It's much easier to design early than to try and take control later
+
+Basically: NVI puts every virtual methods inside a non-virtual wrapper
+
+
+
+# STL Maps
+aka hash tables
+
+store a key/value pair in data structure
+
+eg: "arrays" that store string/int
+
+```c++
+#include <map>
+using namespace std;
+map<string, int> m;
+```
+
+```c++
+m["abc"] = 1;
+m["def"] = 4;
+cout << m["abc"] << end; // 1
+cout << m["ghi"] << emd; // 0
+// if the key doesnt exist, compiler will default-construct a pair and return value
+```
+
+```c++
+if(m.count("def")) {
+  cout << m["def"] << endl;
+}
+m.erase("abc");
+for (auto &p:m) {
+  cout << p.first << p.second << endl; // p.first is key, p.second is value
+}
+```
+
+p's type here is `std::pair<string, int>`
+
+- defined in `<utility>`
+
+
+# Inheritance & copy/move operators
+
+``` c++
+class Book {
+public:
+  //defines copy/move ctor, copy/move assignments
+}
+
+class Text:public Book {
+  string topic;
+public:
+  // does not define copy/move ctor or copy/move assignments
+}
+```
+
+```c++
+Text t{"Algorithms", "CLRS", 500, "CS"};
+Text t2=t1; // copy stor - but no copy ctor for Text
+```
+
+What happens?
+
+- copy init calls Book's copy ctor. and then goes field-by-field for the Text part. ie. default behavior. 
+- some is true for other compiler - supplied methods
+
+
+
+```c++
+Text:: Text(const Text &other): Book{other}, topic{other.topic} {}; // copy ctor
+Text &Text::operator=(const Text &other) { //copyt assignment
+  Book::operator=(other);
+  topic = other.topic;
+  return *this;
+}
+Text::Text(Text &&other): Book{std::move(other)}, topic{std::move(other.topic)} {} //move ctor7
+Text &Text::operator=(const Text&& other) {
+  Book::operator=(std::move(other));
+  topic = std::move(other.topic0);
+  return *this;
+}
+```
+
+These mimic default behavior(ie shallow copy)
+
+Note: even though other "points" to an r-value, other is actually a l-value
+
+- to fore move ctor/assign, we use `std::move` to fore other
+- to be treated as an r-value - ie. move versions are used
+
+Now consider
+
+```c++
+Text t1 {...};
+Text t2 {...};
+Book *pt1 = &t1;
+Book *pt2 = &t2;
+```
+
+what happens if we do: `*pt1 = *pt2;` copy assignment - Book version runs
+
+So, Book::operator = runs;
+
+- problem: topic is nwer assigned - BAD
+
+Partial assignment - base class ptr means base class operator runs
+
+- ie fields not assigned
+
+Fix - make operator= virtual
+
+```c++
+class Book {
+public:
+  virtual Books & operator=(const Book&other) {}
+}
+class Text:public Book{
+public:
+  Text &operator=(const Book) override {}
+}
+```
+
+Note: Text can return a subtype of Book - allowed
+
+but parameters need to be the same (ie. Book & for both)
+
+(if not the same wont compile)
+
+by the is-a principle. b/c a Text is a Book, you can do this
+
+assign of a Book object to a Text object can be done
+
+``` c++
+Text t {...};
+Book b {...};
+Text *pt = &t;
+Book *pb = &b;
+*pt = *pb
+```
+
+Technically works, aka compiles
+
+- but not that useful - init Text from a Book, cannot init topic
+
+Also implies:
+
+```c++
+Comic c {...};
+Comic *pc = &c;
+*pt = *pc; // worse. cannot init Text::topic field also ignoring Commic::hero
+```
+
+So, if operator= is non-virtual, then we get *partial assignment* when assign from base class pointers; if it's *virtual*, we get *mixed assignemnt*
+
+### Recommendation:
+
+all superclasses should be abstract
+
+
+
+```c++
+class AbstractBook {
+  string title, author;
+  int numPages;
+protected:
+  AbstractBook &operator=(const AbstractBook &other);
+public:
+  AbstractBook(...);
+  virtual ~AbstractBook()=0;
+};
+AbstactBook::~AbstractBook(){}
+```
+
+- protected operator= prevents assignment through base class pointers from compiling 
+  - derived classes can still invoke
+
+
+
+```c++
+class NormalBook:public AbstractBook {
+public: 
+  NormalBook();
+  ~NormalBook();
+NormalBook& operator=(const NormalBook& other) {
+  AbstractBook::operatpr=(other);
+  return this;
+}
+}
+```
+
+This design prevents both partial and mixed dessign
+
+- can still uses base class pointers for derived classes
+
+# Visitor Pattern
+
+eg: game with turtles, bullets 
+
+- used for implementing double-dispatch
+- virtual methods are chosen based on the run-time type of the object
+  - but what if you want to choose based on **2** objects?
+  - ie pick a virtual method to run based on **2 ** types -double-dispatch
+
+We want something like this:
+
+`virtual void strike(Enemy &e, Weapon &w);`
+
+- of we attach to an enemy, then its tied to the type of enemy
+
+  (ie. choosing based on type of enemy)
+
+  `virtual void Enemy::strike(Weapon &w);`
+
+- similarly, we cannot just attach to the weapon, either
+
+  ie `virtual void Weapon:: strike(Enemy &e);`
+
+
+
+The trick to dispatching based on **both** entities (double dispatch) is to combine *overriding* and *overloading*
+
+eg:
+
+```c++
+class Enemy {
+public:
+  virtual void beStruckBy(Weapon &w)=0;
+};
+class Turtle:public Enemy {
+public:
+  void beStruckBy(Weapon &w) override {w.strike(*this);}
+};
+class Bullet:public Enemy {
+public:
+  void beStruckBy(weapin &w) override {w.strike(*this);}
+};
+```
+
+```c++
+class Weapon {
+ public:
+  virtual void strike (Turtle &t)=0;
+  virtual void strike (Bullet &b)=0;
+};
+
+class Strike {
+ public:
+  void strike (Turtle &t) {...} // strike + stick
+  void strike (Bullet &b) {...} // bullet + stick
+};
+// similar for Rock
+```
+
+- usage
+
+```c++
+Enemy *e = new Bullet();
+Weapon *w = new Rock();
+e->beStruckedBy(*w); // Bullet struck by Rock
+```
+
+ie
+
+- `Bullet::beStruckBy` runs (virtual)
+- it calls `Weapon::Strike`, where *this is a Bullet
+- Bullet version of strike is called
+- virtual method Strike(Bullet &b) resolves to Rock::strike(Bullet &b)
+
+
+
+Visitor can be used to add functionality to existing classes. without changing or recompiling the class
+
+eg: add a visitor to the Book hierarchy 
+
+AbstractBook
+
+|___Book
+
+|___Text
+
+|___Comic
+
+
+
+BookVisitor
+
+```c++
+class AbstractBook {
+ public:
+  virtual void accept (BookVisitor &v)=0;
+};
+class Book: public AbstractBook {
+ public:
+  vvoid accept (BookVosotpr &v) override {v.visit(*this);} // beStruckBy
+};
+class Text: public AbstractBook {
+ public:
+  void accept(BookVisier &v) override {v.visit(*this);}
+};
+class Comic: public AbstractBook {
+ public:
+  void accept(BookVisier &v) override {v.visit(*this);}
+}
+```
+
+```c++
+class BookVisitor {
+  virtual void visit (Book &b)=0; // overloaded
+  virtual void visit (Text &b)=0;
+  virtual void visit (Comic &b)=0;
+}
+```
+
+What is this good for?
+
+eg: I want to count my types of books 
+
+- count Books by author
+- count Text by topic
+- count Comic by hero
+
+I **could** do this with a `map<string, int>`
+
+If I did this, I'd need to add:
+
+`virtual void updateMap(map<string, int> &m); // add as a static method`
+
+**or** we can model using visitor:
+
+```c++
+class Catalog: public BookVisitor {
+  map<string, int> thecatalog;
+ public:
+  void visit(Book &b){++theCatalog[b.getAuthor()]};
+  void visit(Text &t){++theCatalog[t.getTopic()]};
+  void visit(Comic &c){++theCatalog[c.getHero()]};
+}
+```
+
+in headers:
+
+book.h(text.h, comic.h)
+
+|_includes BookVisitor.h
+
+​			|_includes text.h
+
+​						|_includes book.h
+
+circular dependency
+
+
+
+**But**, we have header guards (who cares 误)
+
+- it works ... by preventing text.h from including book.h
+- Text does not get a copy of Book, so compiler does not understand reference to Book
+
+So, we have a bunch of #includes to define our dependencies (in .h files)
+
+Q: are all these includes needed?
+
+# Compiler Dependencies
+
+When does an actual compiler dependency exist? (ie. when do we need an #include)
+
+consider:
+
+```c++
+class A {};
+class B: public A {};
+class C {
+  A myA; // true dependency -needs size of A
+};
+class D {
+  A *myA; // not a true dependency - pointers are fixed size - foward decl'n
+};
+class E {
+  A f(A x); // not a true dependency - forward decl'n works. eg: class A; (instead of #include "a.h")
+}
+```
+
+So,
+
+- true dependency - implies #include is needed
+- not dependency - implies a forward declaration is ok
+
+if a compilation dependency isnt required, dont introduce one by using #include - leads to circular dependencies
+
+In our example, if class A changes, only class A B C  need recompilation
+
+
+
+We can use forward decl'n for clases D E, but in the implementation the dependency is stronger(ie. #include required in impl'n file)
+
+
+
+eg: 
+
+```c++
+// d.cc
+#include "a.h"
+void D::f() {
+  myApointer->someMethod(); // need to know more about A, true compiler dependency
+}
+```
+
+**Rules**:
+
+Do the #include in .cc file, instead of .h file (if possible)
+
+- use forward declaration in header
+- .cc files never include each other, so no risk of circular dependencies 
+
+To fix Book example?
+
+- in header files, replace #includes w/ forward declarations
+
+
+
+**Consider** the Xwindow class
+
+```c++
+class XWindow {
+  Display *d;
+  Window w;
+  int s;
+  GC gc;
+  unsigned long colors[10];
+  // private data - you should not need to know about this - should be hidden
+ public:
+  ...
+};
+```
+
+What if we wanted to change a private field?
+
+- everyone needs to recompile - data mixed with implementation
+- like to hide details away
+
+**Sol'n**
+
+use the plmpl idiom (pointer-to-implementation)
+
+Create a second class XWindowlmpl
+
+```c++
+// XWindowPlmpl.h
+#include <X11/Xlib.h>
+struct XWindowImpl {
+  Display *d;
+  Window w;
+  int s;
+  GC gc;
+  unsigned long colors[10];
+}
+```
+
+```c++
+// window.h
+class XWindowImpl; // forward decl'n to the impl.class
+class XWindow {
+  XWindowImpl * pImpl; // no compiler dependency on XWindowImpl.h
+ public:
+  
+};
+```
+
+``` c++
+// window.cc
+#include "window.h"
+#include "XWindowImpl.h"
+XWindow::XWindow(...): pImpl {new XWindow Impl} ... {}
+```
+
+Change how you reference fields:
+
+d `pImpl->d`
+
+w `pImpl->w`
+
+s `pImpl->s`
+
+change in all the methods
+
+
+
+- If you confine all private fields within XWindowImpl, the only window.cc needs to be recompiled if you change XWindows Impl
+
+
+
+
+**Generalization** - you can "easily" support multiple window implementations
+
+
+
+![windowimpl](./img/windowimpl.png)
+
+
+
+The plmpl ido=iom with a class hirarchy of implementations is called the **Bridge Pattern**
+
+
+
+# Measures of Design Quality
+
+Coupling and cohesion -at odds
+
+**Coupling ** 
+
+- the degree to which modules in a program depend on one another.
+- (low) modules that communicate with basic function calls / parameter / return types (eg: ints, strings)
+- (med) modules that pass data back and forth as structs / arrays
+- (med) modules that affect each others control flow
+- (med) modules sharing global data - all rely on common assumptions about data
+- (high) modules that access each others implementations (eg. friends)
+
+High coupleing?
+
+- changes one module changes in another
+- hard to reuse modules
+
+
+
+**High coupling?**
+
+- changing are module often requires changing alters
+- hard to reuse
+
+
+
+**Cohesion**
+
+- how closely related elements of a module are to one another
+- (low) arbitrary of customized elements/classes (eg: utility)
+- (low) elements that share a theme, perhaps share some common code (eg: algorithm)
+- (med) elements that manipulate state of something over a lifetime
+- (med) elements that pass data to each other
+- (high) elements that work together to perform a single task
+
+**Low Cohesion?**
+
+- partly organized code
+- hard to understand / maintain
+
+
+
+**Goals** 
+
+- low coupling 
+  - promotes reuse
+- high cohesion
+  - promotes readability/maintainability
+
+
+
+# Decoupling the Interface (MVC)
+
+As an example - most programs should not be printing to the screen ()
+
+eg: 
+
+``` c++
+class ChessBoard {
+  ...
+  cout << "your move" << endl;
+}
+```
+
+This is bad design makes it difficult to reuse / modify the code
+
+what if you want to use the Chessboard - but not communicate using stdin / stdout?
+
+
+
+One Sol'n
+
+give the class stream objects that we want it to use
+
+eg:
+
+```c++
+class ChessBoard {
+  istream &in;
+  ostream &out;
+public:
+  ChessBoard(istream &in, ostream &out): in{in}, out{out} {
+    ...
+    cout << "your move" << endl; // slightly better = not assuming cout but still assuming in/out streams
+  }
+}
+```
+
+
+
+What if we dont want streams at all?
+
+out 
+
+- graphical display
+- screen readers 
+
+in
+
+- joystick
+- voice
+
+So, our chessboard should not do in/output - arguably, our chessboard should not be doing any communication - b/c its a *chess* board
+
+### Single Responsibility Principle
+
+- a class should only have one reason to change (ie. it should manage one thing)
+- fame state / logic + communication are separate
+
+**Better Sol'n** 
+
+- chessboard should manage state and communicate with some external entity, which handles input/output (ie. function calls, parameters, exceptions)
+
+Question:
+
+- should main handle communication? NO
+- you want an external entity that is maintainable and reusable - both things you dont get from main
+
+Best sol'n:
+
+- define an external class to manage communication
+
+
+
+# Pattern: Module - View - Controller
+
+Separate the data / state of your app from the presentation of that data, and control of data (ie interaction)
+
+- 3 classes / components
+  1. Model - data / state of your app
+  2. View - presentation / interface
+  3. Controller - how interface / data is manipulated
+
+
+
+The **Model**:
+
+- can have multiple views (eg: text, graphical) loosely coupled
+- does not need to know details
+- just needs to notify them when data changes
+- often resembles the Observer Pattern - ie. model - subject; view - observer
+
+
+
+The **View**:
+
+- just displays, state from the model
+- handles notifications, etc as observer
+
+
+
+The **Controller**
+
+- mediate between model and view
+- may communicate with user for input
+- may enforce turn-taking / ordering
+
+Role of Controller - may change based on requirements
+
+- always mediates between modal/view
+
+
+
+**Why MVC** ?
+
+provides opportunities for customization and reuse.
+
+
+
+# Exception Safety
+
+Consider:
+
+```c++
+void f() {
+  MyClass *p = new MyClass();
+  MyClass mc;
+  ...
+  g();
+  delete p;
+}
+```
+
+No leaks in the code, as long as it runs normally.
+
+but what if g() raises an exception?
+
+
+
+What's guaranteed ?
+
+- during stack (after an exception), all stack-allocated data is cleaned up - destructors run, memory freed
+- but, heap-allocated memory is not freed, of g() throws an exception - m is cleaned up, p leaks memory
+
+Fix?
+
+```c++
+MyClass *p = new MyClass;
+MyClass mc;
+try {
+  ...
+  g();
+} catch (...) {
+  delete p; // make sure to delete p!
+  throw;
+}
+delete p; // nessessary duplication here. if no exception threw, still need delete p
+```
+
+meh, tedious, repetitive; error-prome
+
+
+
+In some other languages (not c++), may have a "finally" block when you can specify code that always runs 
+
+eg:
+
+```java
+try {
+  g();
+} catch (...) {
+  cout << "ouch!" << endl;
+} finally {
+  delete p; // always runs! yah! not duplication
+} // good feature about java, not c++
+```
+
+
+
+What does C++ guarantee? (when an exception is raised)
+
+ALL that c++ guarantees is that destructors for stack-allocated objects will run.
+
+so, let's use that
+
+use stack-allocated objects as much as possible...
+
+***C++ Idiom RAII*** - Resource Acquisition Is Initialization
+
+- Every resource should be wrapped by a stack-allocated object and the destructor should just delete /free it
+
+eg:
+
+```c++
+// files 
+{
+  ifstream f{"text.txt"}
+  ...
+} // out-of-scope? ifstream closes
+```
+
+Acquiring the file resource happens during initialization
+
+The file resource happes during initialization
+
+The file is guaranteed to be closed when f is popped from the stack and its destructor runs.
+
+
+
+This can be done with dynamic memory as well.
+
+`class std::unique-ptr<T> `
+
+- is a template class that can hold a pointer to an object that you specify when its constructed
+- `#include <memory>`
+- the destructor will free the pointer
+- while in-scope, you can dereference it and use as a pointer
+
+eg:
+
+```c++
+void f() {
+  auto p = std::make-unique<MyClass>();
+  // allocates space for a Myclass object returns a unique-ptr<MyClass>
+  MyClass mc;
+  g();
+}
+```
+
+Issue?
+
+``` c++
+class C{
+  auto p = std::make-unique<C>(); // p points to an instance
+  unique-ptr<C> q=p; // error
+};
+```
+
+what happens when a unique-ptr is copied?
+
+2 objects pointing to same memory - we cannot delete memory twice!
+
+copying is *disabled* for unique-ptrs for this reason - but you can move them
+
+Sample Impl for unique-ptr (in git repo)
+
+```c++
+template <typename T> class unique-ptr {
+  T *ptr;
+public:
+  unique-ptr(T *p): ptr{p} {}
+  ~unique-ptr() {delete p;}
+  unique-ptr(const unique-ptr<T> &other) = delete; // compiler dont create default
+  unique-ptr<T> &operator=(const unique-ptr<T> &other) = delete;
+  unique-ptr(unique-ptr<T> &&other): ptr{other.ptr} {other.ptr=nullptr} {}
+  unique-ptr<T> &operator=(unique.ptr<T> &&other) {
+    //swap ...
+    using std::swap;
+    swap(other.ptr, this->ptr);
+    return *this;
+  }
+  T& operator *() {
+	return *ptr;
+  }
+}
+```
+
+# Shared Pointer
+
+If you want to be able to copy a pointer, use `std::shared-ptr`
+
+
+
+``` c++
+void f() {
+  auto p1 = std::make-shared <MyClass>(); // allocates space for MyClass object
+  if(...) {
+    auto p2 = p1;
+  } // p2 is out of scope, object is not deleted since p1 still points to it
+} // call stack unwinds, p1 out of scope, object is deleted
+```
+
+
+
+shared-ptrs maintain a reference-count - a count of all shared-ptrs pointing to that object
+
+- memory is freed when reference-count == 0 (ie. number of shared-ptrs is zero)
+
+Use unique and shared pointers - greatly reduces memory leaks.
+
+For other resources, do something similar
+
+- eg. fstream for files, XWindow for windows
+
+
+
+# Exception Safety
+
+We have 3 levels of exception safety with f 
+
+``` c++
+void f() {
+  MyClass *p = new MyClass;
+  MyClass mc;
+  g(); // throws?
+  delete p;
+}
+```
+
+1. **Basic Guarantee** - if an exception occurs, the program will be left in a valid but unspecified state; nothing is leaked, class invariants are maintained.
+2. **Strong Guarantee** - if an exception is raised while executing f, the state of the program is left as if f was never called.
+3. **No Throw** - f will *never* throw an exception, and will always accomplish its task.
+
+
+
+``` c++
+class A {...};
+class B {...};
+class C {
+  A a;
+  B b;
+public:
+  void f() {
+    a.method1(); // may throw, strong guarantee
+    b.method2(); // may throw, strong
+  }
+};
+```
+
+is `C::f()` exception safe?
+
+1. if a.method1() throws an exception
+   - first statement nothing has happened yet
+   - call stack unwinds, nothing happens
+   - ok ~ strong guarantee
+2. if `b.method2()` throws an exception
+   - `a.method1()` has run already
+   - to enforce a strong guarantee, I need to *undo* what `a.method1()` did
+   - *very* hard to do - esp. if method 1 has "non-local side effects"
+
+so, f() is probably not exception safe (b/c I cannot undo from example)
+
+But, if `A::method1` and `B::method2` do ***not*** have non-local side effects, we *can* provide exception safety with **copy-swap** 
+
+
+
+```c++
+class C {
+  A a;
+  B b;
+public:
+  void f() {
+    A atemp = a;
+    B btemp = b;
+    atemp.method1(); // assumption - no non-local side-effects
+    btemp.method2(); // ie. a and b are self contained
+    a = atemp;
+    b = btemp;
+  }
+}
+```
+
+Because copy-assign can still (potentially) throw an exception, we dont yet have exception-safety
+
+- would be better if the swap was guaranteed to not throw an exception (ie. no-throw guarantee)
+- **a non-throwing swap mechanism is the key to writing exception safe code** (will be on exam)
+
+
+
+**key observation** - copying pointers cannot throw (ie. always works)
+
+so, how do we build a swap that uses pointers?
+
+eg: pImpl idiom
+
+``` c++
+struct CImpl {
+  A a;
+  B b;
+};
+class C {
+  unique-ptr<CImpl> pImpl = make-unique<CImpl>();
+public:
+  void f() {
+    auto temp = make-unique<CImple>(*pImpl);
+    temp->a.method1();
+    temp->b.method2();
+    swap(temp, pImpl); // no-throw
+  }
+}
+```
+
+
+
+if A::method1 or B::method2 offer *no* exception safety, the f() cannot offer either
+
+
+
+### Exception Safety & STL vectors
+
+Vectors
+
+- encapsulate a heap-allocated array
+- follow RAII - when a static-allocated vector goes out-of-scope, the internal heap allocated memory is freed
+
+eg. 
+
+```c++
+void f() {
+  vector <MyClass> v;
+  ...
+} // v out of scope, MyClass dtor runs on all objects in v, finally, v's memory is freed
+```
+
+
+
+but,
+
+```c++
+void g() {
+  vector <MyClass*> v;
+  ...
+} // out-of-scope, pointers do not have destructors to run, only v's memory is freed
+```
+
+In this case, objects pointed to by pointers in v are not freed
+
+- vectors does not understand the ownership of memory by pointers (ie. if it can free memory)
+
+so, if these objects are to be freed, you have to do it!
+
+``` c++
+void g() {
+  vector <MyClass *> v;
+  ...
+  for (auto &x:v) delete x; // old, manual, pedantic way
+}
+```
+
+
+
+fancy way! using shared pointers
+
+```c++
+void h() {
+  vector <shared-pointer<MyClass>> v;
+  ...
+} // v goes out-of-scope - shared-pointer destructor runs, objects freed if no other shared-ptrs
+```
+
+good, no explicit deallocation 
+
+
+
+Consider:
+
+`vector<T>::emplace_back`
+
+- offers strong guarantee
+- if array is full (ie. cap == size)
+  - allocate a new larger array
+  - copy the objects over (copy ctor)
+    - if a copy ctor throws exception
+      - destroy the new array
+      - leaves the old array intact
+    - else
+      - delete the old array
+
+**But**, copying is expensive, the old data is getting thrown away
+
+- moving from old to new is more efficient
+  - allocate a new larger array
+  - move objects from old to new (move ctor)
+  - delete the old array
+
+**But**, the move ctor can throw exception as well, cannot offer strong guarantee for `emplace_back`
+
+Safety of `emplace_back` relies on safety of move ctor
+
+
+
+move ctor-needs to be no-throw
 
