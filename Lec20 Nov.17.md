@@ -306,6 +306,12 @@ public:
   unique-ptr(unique-ptr<T> &&other): ptr{other.ptr} {other.ptr=nullptr} {}
   unique-ptr<T> &operator=(unique.ptr<T> &&other) {
     //swap ...
+    using std::swap;
+    swap(other.ptr, this->ptr);
+    return *this;
+  }
+  T& operator *() {
+	return *ptr;
   }
 }
 ```
