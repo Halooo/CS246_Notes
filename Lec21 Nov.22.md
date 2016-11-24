@@ -206,13 +206,36 @@ Consider:
   - move objects from old to new (move ctor)
   - delete the old array
 
-**But**, the move ctor can throw exception as well, cannot offer strong guarantee for `emplace_back`
+**But** more problems, the move ctor can throw exception as well, cannot offer strong guarantee for `emplace_back`
 
-Safety of `emplace_back` relies on safety of move ctor
+- Safety of `emplace_back` relies on safety of move ctor move ctor-needs to be no-throw.
+- this would mean that we no longer have strong guarantee for emplace_back
 
+**If** the move ctor offers no-throw (it wont throw on exception), emplace_back will use move
 
+- otherwise it will use copy
 
-move ctor-needs to be no-throw
+your move operators should provide no-throw guarantee (if possible) 
+
+- we can do this (with pImpl, move/swap pointers will not throw an exception)
+- need to tell compiler that they wont throw with `noexcept`
+
+eg:
+
+```c++
+class MyClass {
+public:
+  MyClass(MyClass &&other) noexcept {...}
+  MyClass & oporator=(Myclass &&other) noexcept {...}
+}
+```
+
+for us, this is a means to ensure that emplace_back can use move operators - and still provide the strong guarantee
+
+- your move operators should off no-throw
+- if you know a function will rather throw an exception, declare it noexcept
+  - at a min, move/swap are always be noexcept
+  - facilitates optimization for the compiler
 
 
 

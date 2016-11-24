@@ -25,6 +25,6 @@ CS246 class notes for University of Waterloo Fall 2016
 | Lec19   | Visitor Pattern, Compiler Dependencies   |
 | Lec20   | Measures of Design Quality, Decoupling the Interface (MVC),Exception Safety |
 | Lec21   | Shared Pointer, Exception Safety         |
-|         |                                          |
+| Lec22   | Casting                                  |
 |         |                                          |
 |         |                                          |
