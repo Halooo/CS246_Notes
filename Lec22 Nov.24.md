@@ -169,8 +169,8 @@ eg:
 
 ```c++
 void whatIsIt(shared_ptr<Book> b {
-  if (dynamic_pointer_cast<Text>(b)) cout << "Text";
-  else if (dynamic_pointer_cast<Comic>(b)) cout << "Comic";
+  if (dynamic_ptr_cast<Text>(b)) cout << "Text";
+  else if (dynamic_ptr_cast<Comic>(b)) cout << "Comic";
   else cout << "Book";
 }
 ```
@@ -184,3 +184,39 @@ Code like this is very tightly coupled to book hierarchy
 
 - eg: add a new type of book (eg: cookbook) is difficult
 - better ways - virtual methods, visitor pattern
+
+
+
+Dynamic casting also works with references 
+
+```c++
+Text t {};
+Book &b = t;
+...
+Text &t2 = dynamic_cast<Text &> b;
+```
+
+If b points to a Text - this works fine
+
+If b does not point to a Text - cast fails and throws exception (bad cast exception)
+
+
+
+We can use dynamic reference casting to solve the polymorphic assignment 
+
+``` c++
+Text & Text::operator=(const Book &other) {
+  // issue - Book doesnt have a topic field
+  // use cast to see if other is a Text with all fields
+  Text & textother = dynamic_cast<Text &> other;
+  if (this == &textother) return *this;
+  Book::operator=(other);
+  topic = textother.topic;
+  return *this;
+}
+```
+
+If we wanted to handle all cases - we could dynamic_cast to Comic... Book... and avoid an exception
+
+
+

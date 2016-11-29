@@ -26,5 +26,5 @@ CS246 class notes for University of Waterloo Fall 2016
 | Lec20   | Measures of Design Quality, Decoupling the Interface (MVC),Exception Safety |
 | Lec21   | Shared Pointer, Exception Safety         |
 | Lec22   | Casting                                  |
-|         |                                          |
-|         |                                          |
+| Lec23   | How Virtual Methods Work, Multiple Inheritance |
+| Lec24   |                                          |
