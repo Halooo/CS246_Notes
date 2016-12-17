@@ -27,4 +27,4 @@ CS246 class notes for University of Waterloo Fall 2016
 | Lec21   | Shared Pointer, Exception Safety         |
 | Lec22   | Casting                                  |
 | Lec23   | How Virtual Methods Work, Multiple Inheritance |
-| Lec24   |                                          |
+| Lec24   | Template Functions, The algorithm library (STL), Function Objects,Lambdas,Iterators |
