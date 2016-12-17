@@ -165,15 +165,15 @@ if B and C both want from A, there probably should be one A
 
 - the default is to get 2 copies - which is wrong
 
-​	A
+  ​A
 
-/		\
+  /	\
 
-B		C
+  B	C
 
-\		/
+  \	/
 
-​	D
+  ​D
 
 **deadly diamond of death** (and doom and destruction)
 
@@ -297,3 +297,15 @@ so the distance between B fields and A fields isnt known at compile time
 - so, B* cannot find A fields
 
 how can B find A fields
+
+
+
+The challenge is that a class only knows about its own fields (and base class fields)
+
+- so B should only be aware of B and A
+- but "distance" between B and A fields depends on other classes
+  - ie. B* cannot figure it out
+- Goal: a pointer of a particular type to find it's fields and base class fields
+- sol'n:
+  - derived class will have a pointer to its base class fields in its v-table(assumes that a B* points to B, D* points to D, etc)
+  - pointer assignment between A,B,C,D changes the address of the pointer (ie. for an object of type D, assign to `A*, B* or C*` will change the pointer to the appropriate offset)

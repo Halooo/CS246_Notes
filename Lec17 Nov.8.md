@@ -27,7 +27,7 @@ eg: Pizza
 ``` c++
 class Pizza {
 public:
-  virtual sloat price() const=0;
+  virtual float price() const=0;
   virtual string desc() const=0;
   virtual ~Pizza();
 };
@@ -48,7 +48,7 @@ public:
   virtual ~Decorator() {delete component;}
 };
 
-class StuffedCrust: public Pizza {
+class StuffedCrust: public Decorator {
 public:
   StuffedCrust(Pizza *p): Decorator{p} {}
   float price() const override {return component->price+2.65;}
