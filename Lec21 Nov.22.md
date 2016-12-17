@@ -71,6 +71,10 @@ is `C::f()` exception safe?
    - to enforce a strong guarantee, I need to *undo* what `a.method1()` did
    - *very* hard to do - esp. if method 1 has "non-local side effects"
 
+**None-local side effect** : A, B do not change global variable
+
+self-contained: A and B only change its own field, run itself, will not influence others.
+
 so, f() is probably not exception safe (b/c I cannot undo from example)
 
 But, if `A::method1` and `B::method2` do ***not*** have non-local side effects, we *can* provide exception safety with **copy-swap** 
